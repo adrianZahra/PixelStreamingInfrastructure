@@ -198,8 +198,7 @@ export class WebRtcPlayerController {
         ) => this.handleStreamerListMessage(messageList);
         this.webSocketController.onWebSocketOncloseOverlayMessage = (event) => {
             this.pixelStreaming._onDisconnect(
-                `Websocket disconnect (${event.code}) ${
-                    event.reason != '' ? '- ' + event.reason : ''
+                `Websocket disconnect (${event.code}) ${event.reason != '' ? '- ' + event.reason : ''
                 }`
             );
             this.setVideoEncoderAvgQP(0);
@@ -208,8 +207,7 @@ export class WebRtcPlayerController {
             const BrowserSendsOffer = this.config.isFlagEnabled(
                 Flags.BrowserSendOffer
             );
-            if(!BrowserSendsOffer)
-            {
+            if (!BrowserSendsOffer) {
                 this.webSocketController.requestStreamerList();
             }
         });
@@ -227,7 +225,7 @@ export class WebRtcPlayerController {
             this.setKeyboardInputEnabled(false);
             this.setGamePadInputEnabled(false);
 
-            if(this.shouldReconnect && this.config.getNumericSettingValue(NumericParameters.MaxReconnectAttempts) > 0) {
+            if (this.shouldReconnect && this.config.getNumericSettingValue(NumericParameters.MaxReconnectAttempts) > 0) {
                 this.isReconnecting = true;
                 this.reconnectAttempt++;
                 this.restartStreamAutomatically();
@@ -265,7 +263,7 @@ export class WebRtcPlayerController {
         this.config._addOnOptionSettingChangedListener(
             OptionParameters.StreamerId,
             (streamerid) => {
-                if(streamerid === "") {
+                if (streamerid === "") {
                     return;
                 }
 
@@ -282,21 +280,21 @@ export class WebRtcPlayerController {
 
         this.setVideoEncoderAvgQP(-1);
 
-        this.signallingUrlBuilder =  () => {
+        this.signallingUrlBuilder = () => {
             let signallingServerUrl = this.config.getTextSettingValue(
                 TextParameters.SignallingServerUrl
             );
-    
+
             // If we are connecting to the SFU add a special url parameter to the url
             if (this.config.isFlagEnabled(Flags.BrowserSendOffer)) {
                 signallingServerUrl += '?' + Flags.BrowserSendOffer + '=true';
             }
-    
+
             // This code is no longer needed, but is a good example for how subsequent config flags can be appended
             // if (this.config.isFlagEnabled(Flags.BrowserSendOffer)) {
             //     signallingServerUrl += (signallingServerUrl.includes('?') ? '&' : '?') + Flags.BrowserSendOffer + '=true';
             // }
-    
+
             return signallingServerUrl;
         }
     }
@@ -768,10 +766,9 @@ export class WebRtcPlayerController {
             delete protocolJSON.Direction;
             Logger.Log(
                 Logger.GetStackTrace(),
-                `Received new ${
-                    direction == MessageDirection.FromStreamer
-                        ? 'FromStreamer'
-                        : 'ToStreamer'
+                `Received new ${direction == MessageDirection.FromStreamer
+                    ? 'FromStreamer'
+                    : 'ToStreamer'
                 } protocol. Updating existing protocol...`
             );
             Object.keys(protocolJSON).forEach((messageType) => {
@@ -793,10 +790,10 @@ export class WebRtcPlayerController {
                                 Logger.GetStackTrace(),
                                 `ToStreamer->${messageType} protocol definition was malformed as it didn't contain at least an id and a byteLength\n
                                            Definition was: ${JSON.stringify(
-                                               message,
-                                               null,
-                                               2
-                                           )}`
+                                    message,
+                                    null,
+                                    2
+                                )}`
                             );
                             // return in a forEach is equivalent to a continue in a normal for loop
                             return;
@@ -964,12 +961,20 @@ export class WebRtcPlayerController {
             // close the connection
             this.closeSignalingServer();
 
-            // wait for the connection to close and restart the connection
-            const autoConnectTimeout = setTimeout(() => {
-                this.pixelStreaming._onWebRtcAutoConnect();
-                this.connectToSignallingServer();
-                clearTimeout(autoConnectTimeout);
-            }, 3000);
+            // wait for the connection to close
+            while (this.webSocketController.webSocket.readyState !== WebSocket.CLOSED) {
+                // wait 3 seconds before looping again
+                setTimeout(() => {
+                    Logger.Log(
+                        Logger.GetStackTrace(),
+                        'Waiting for the websocket to close'
+                    );
+                }, 3000);
+            }
+
+            // restart after waiting
+            this.pixelStreaming._onWebRtcAutoConnect();
+            this.connectToSignallingServer();
         }
     }
 
@@ -1227,7 +1232,7 @@ export class WebRtcPlayerController {
             // Browsers emit "connected" when getting first connection and "completed" when finishing
             // candidate checking. However, sometimes browsers can skip "connected" and only emit "completed".
             // Therefore need to check both cases and emit onWebRtcConnected only once on the first hit.
-            if (!webRtcConnectedSent && 
+            if (!webRtcConnectedSent &&
                 ["connected", "completed"].includes(this.peerConnectionController.peerConnection.iceConnectionState)) {
                 this.pixelStreaming._onWebRtcConnected();
                 webRtcConnectedSent = true;
@@ -1323,13 +1328,13 @@ export class WebRtcPlayerController {
             6
         );
 
-        if(this.isReconnecting) {
-            if(messageStreamerList.ids.includes(this.subscribedStream)) {
+        if (this.isReconnecting) {
+            if (messageStreamerList.ids.includes(this.subscribedStream)) {
                 // If we're reconnecting and the previously subscribed stream has come back, resubscribe to it
                 this.isReconnecting = false;
                 this.reconnectAttempt = 0;
                 this.webSocketController.sendSubscribe(this.subscribedStream);
-            } else if(this.reconnectAttempt < this.config.getNumericSettingValue(NumericParameters.MaxReconnectAttempts)) {
+            } else if (this.reconnectAttempt < this.config.getNumericSettingValue(NumericParameters.MaxReconnectAttempts)) {
                 // Our previous stream hasn't come back, wait 2 seconds and request an updated stream list
                 this.reconnectAttempt++;
                 setTimeout(() => {
@@ -1341,7 +1346,7 @@ export class WebRtcPlayerController {
                 this.isReconnecting = false;
                 this.shouldReconnect = false;
                 this.webSocketController.close();
-                
+
                 this.config.setOptionSettingValue(
                     OptionParameters.StreamerId,
                     ""
@@ -1652,7 +1657,7 @@ export class WebRtcPlayerController {
      * By default the maxQP is 51 meaning the encoder is free
      * to drop quality as low as needed on the given network link.
      */
-     sendEncoderMaxQP(maxQP: number) {
+    sendEncoderMaxQP(maxQP: number) {
         Logger.Log(Logger.GetStackTrace(), `MaxQP=${maxQP}\n`, 6);
 
         if (maxQP != null) {
@@ -1683,7 +1688,7 @@ export class WebRtcPlayerController {
      * (note setting this too low could result in blocky video).
      * @param minBitrate - The minimum bitrate we would like WebRTC to not fall below.
      */
-     sendWebRTCMaxBitrate(maxBitrate: number) {
+    sendWebRTCMaxBitrate(maxBitrate: number) {
         Logger.Log(Logger.GetStackTrace(), `WebRTC Max Bitrate=${maxBitrate}`, 6);
         if (maxBitrate != null) {
             this.sendDescriptorController.emitCommand({
@@ -1698,11 +1703,11 @@ export class WebRtcPlayerController {
      * the maximum fps we would like WebRTC to stream at. 
      * @param fps - The maximum stream fps.
      */
-     sendWebRTCFps(fps: number) {
+    sendWebRTCFps(fps: number) {
         Logger.Log(Logger.GetStackTrace(), `WebRTC FPS=${fps}`, 6);
         if (fps != null) {
-            this.sendDescriptorController.emitCommand({'WebRTC.Fps': fps});
-            this.sendDescriptorController.emitCommand({'WebRTC.MaxFps': fps}); /* TODO: Remove when UE 4.27 unsupported. */
+            this.sendDescriptorController.emitCommand({ 'WebRTC.Fps': fps });
+            this.sendDescriptorController.emitCommand({ 'WebRTC.MaxFps': fps }); /* TODO: Remove when UE 4.27 unsupported. */
         }
     }
 
@@ -1820,7 +1825,7 @@ export class WebRtcPlayerController {
             latencyTestResults.endToEndLatency =
                 ~~(latencyTestResults.frameDisplayDeltaTimeMs +
                     latencyTestResults.networkLatency,
-                +latencyTestResults.CaptureToSendMs);
+                    +latencyTestResults.CaptureToSendMs);
         }
         this.pixelStreaming._onLatencyTestResult(latencyTestResults);
     }
@@ -1978,10 +1983,10 @@ export class WebRtcPlayerController {
         this.mouseController?.unregisterMouseEvents();
         if (isEnabled) {
             const mouseMode = this.config.isFlagEnabled(Flags.HoveringMouseMode)
-            ? ControlSchemeType.HoveringMouse
-            : ControlSchemeType.LockedMouse;
+                ? ControlSchemeType.HoveringMouse
+                : ControlSchemeType.LockedMouse;
             this.mouseController =
-            this.inputClassesFactory.registerMouse(mouseMode);
+                this.inputClassesFactory.registerMouse(mouseMode);
         }
     }
 
